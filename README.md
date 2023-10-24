@@ -1,7 +1,9 @@
 # Cauliflower
 
 A simple telebot monkeypatcher
+
 Functions: Listen for incoming messages
+
 **Update:** Cauliflower now works with Middleware instead of bot.Handle() allowing to create handlers
 
 ## Quickstart
@@ -50,6 +52,7 @@ func main() {
 
 What it does:
 - This will initialize the channels and handlers that cauliflower needs in order to function.
+
 Fields explanation:
 - Timeout: A default timeout for all Listen functions that will be called without the Timeout field
 - Handlers: The type of messages you want to use with the Listen functions
@@ -72,6 +75,7 @@ if err != nil {
 
 What it does:
 - This will wait for an incoming message, any code after this will be blocked until a message has arrived or the timeout has exceeded
+
 Fields explanation:
 - Timeout: The maximum time to wait for the message
 - Message: A message to send before listening
@@ -107,6 +111,7 @@ b.Use(i.Middleware())
 ### Why can't I use bot.Handle()
 
 You have to create the instance before using bot.Handle()
+
 E.g:
 ```golang
 b, _ := telebot.NewBot(telebot.Settings{ ... })
@@ -121,7 +126,3 @@ b.Handle(telebot.OnText, func(c telebot.Context) { ... }) // will work
 ### Listen() doesn't work
 
 Make sure you've set the Handlers field when using cauliflower.NewInstance() to the types of message you want to listen to
-
-## Why is it called cauliflower
-
-Because I have another project which use this monkeypatcher and is called friendly-brocolli
