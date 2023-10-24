@@ -1,40 +1,40 @@
 package cauliflower
 
 import (
+	"errors"
 	"gopkg.in/telebot.v3"
 	"time"
-	"errors"
 )
 
 var (
 	ErrTimeoutExceeded = errors.New("cauliflower: Didn't receive a message before the end of the timeout")
-	ErrBotIsNil = errors.New("cauliflower: Settings.Bot can't be nil")
-	ErrContextIsNil = errors.New("cauliflower: Parameters.Context can't be nil")
+	ErrBotIsNil        = errors.New("cauliflower: Settings.Bot can't be nil")
+	ErrContextIsNil    = errors.New("cauliflower: Parameters.Context can't be nil")
 )
 
 type Instance struct {
-	Bot 		*telebot.Bot
-	Timeout 	time.Duration
-	Channel 	map[int64](*chan *telebot.Message)
+	Bot     *telebot.Bot
+	Timeout time.Duration
+	Channel map[int64](*chan *telebot.Message)
 }
 
 type Settings struct {
-	Bot 				*telebot.Bot
+	Bot *telebot.Bot
 
 	// Default timeout for every Listen() call
-	// Will be overriden if Listen() call has Parameters.Timeout field filled
+	// Will be overridden if Listen() call has Parameters.Timeout field filled
 	// Optional, default: 1 * time.Minute
-	Timeout 			time.Duration
+	Timeout time.Duration
 
 	// List of dummy handlers to create in order to make Listen() work
-	// Will be overriden if instance is created before creating another handle
+	// Will be overridden if instance is created before creating another handle
 	// Recommended, default: telebot.OnText
-	Handlers 			[]string
+	Handlers []string
 
 	// Automatically install middleware instead of doing it manually
 	// Execute: Bot.Use(i.Middleware())
 	// Optional, default: false
-	InstallMiddleware 	bool
+	InstallMiddleware bool
 }
 
 type Parameters struct {
@@ -63,13 +63,13 @@ func NewInstance(settings Settings) (*Instance, error) {
 	}
 
 	for _, handler := range settings.Handlers {
-		settings.Bot.Handle(handler, func(c telebot.Context) error {return nil})
+		settings.Bot.Handle(handler, func(c telebot.Context) error { return nil })
 	}
-	
+
 	i := Instance{
-		Bot: 		settings.Bot,
-		Timeout: 	settings.Timeout,
-		Channel: 	make(map[int64](*chan *telebot.Message)),
+		Bot:     settings.Bot,
+		Timeout: settings.Timeout,
+		Channel: make(map[int64](*chan *telebot.Message)),
 	}
 
 	if settings.InstallMiddleware {
