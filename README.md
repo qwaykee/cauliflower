@@ -82,10 +82,9 @@ Fields explanation:
 
 ```golang
 answer, err := i.Listen(cauliflower.Parameters{
-	Context: telebot.Context, // required
-	Timeout: time.Duration // optional, default: Instance.Settings.Timeout
-	Filter:	string // optional, default: telebot.OnText
-	Message: string // optional, default: nil
+	Context: telebot.Context, 	// required
+	Timeout: time.Duration,		// optional, default: Instance.Settings.Timeout
+	Message: string, 			// optional, default: nil
 }) // will return *telebot.Message, error
 if err == cauliflower.ErrTimeoutExceeded {
 	return c.Send("You didn't type anything, please rerun the command :/")
