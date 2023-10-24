@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gopkg.in/telebot.v3"
 	"time"
+	"log"
 )
 
 var (
@@ -62,10 +63,6 @@ func NewInstance(settings Settings) (*Instance, error) {
 		settings.Handlers = []string{telebot.OnText}
 	}
 
-	for _, handler := range settings.Handlers {
-		settings.Bot.Handle(handler, func(c telebot.Context) error { return nil })
-	}
-
 	i := Instance{
 		Bot:     settings.Bot,
 		Timeout: settings.Timeout,
@@ -74,6 +71,11 @@ func NewInstance(settings Settings) (*Instance, error) {
 
 	if settings.InstallMiddleware {
 		settings.Bot.Use(i.Middleware())
+	}
+
+	for _, handler := range settings.Handlers {
+		log.Println(handler)
+		settings.Bot.Handle(handler, func(c telebot.Context) error { return nil })
 	}
 
 	return &i, nil
