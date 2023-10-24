@@ -4,7 +4,6 @@ import (
 	"errors"
 	"gopkg.in/telebot.v3"
 	"time"
-	"log"
 )
 
 var (
@@ -74,7 +73,6 @@ func NewInstance(settings Settings) (*Instance, error) {
 	}
 
 	for _, handler := range settings.Handlers {
-		log.Println(handler)
 		settings.Bot.Handle(handler, func(c telebot.Context) error { return nil })
 	}
 
