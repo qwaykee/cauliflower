@@ -32,7 +32,7 @@ func main() {
 
 	b.Handle("/echo", func (c telebot.Context) error {
 		answer, err := i.Listen(cauliflower.Parameters{
-			Context: c,
+			Chat: c.Chat(),
 			Message: "Please enter a text:",
 		})
 		if err == cauliflower.ErrTimeoutExceeded {
@@ -83,14 +83,14 @@ Fields explanation:
 
 ```golang
 answer, err := i.Listen(cauliflower.Parameters{
-	Context: telebot.Context, 	// required
+	Chat:    *telebot.Chat, 	// required
 	Timeout: time.Duration,		// optional, default: Instance.Settings.Timeout
 	Cancel:  string, 			// optional
 	Message: string, 			// optional, default: nil
 }) // will return *telebot.Message, error
 if err == cauliflower.ErrTimeoutExceeded {
 	return c.Send("You didn't type anything, please rerun the command :/")
-	// Possible error: ErrContextIsNil, ErrTimeoutExceeded, ErrCancelCommand
+	// Possible error: ErrContextIsNil, ErrTimeoutExceeded, ErrCancelCommand, telebot error (bot.Send)
 }
 ```
 

@@ -10,7 +10,7 @@ var (
 	ErrTimeoutExceeded = errors.New("cauliflower: Didn't receive a message before the end of the timeout")
 	ErrCancelCommand   = errors.New("cauliflower: Listen function has been canceled")
 	ErrBotIsNil        = errors.New("cauliflower: Settings.Bot can't be nil")
-	ErrContextIsNil    = errors.New("cauliflower: Parameters.Context can't be nil")
+	ErrChatIsNil       = errors.New("cauliflower: Parameters.Chat can't be nil")
 )
 
 type Instance struct {
@@ -45,7 +45,9 @@ type Settings struct {
 }
 
 type Parameters struct {
-	Context telebot.Context
+	// Current chat (Context.Chat())
+	// Required
+	Chat *telebot.Chat
 
 	// Timeout before listener is cancelled
 	// Optional, default: Instance.Settings.Timeout
@@ -102,9 +104,11 @@ func (i *Instance) Middleware() telebot.MiddlewareFunc {
 	}
 }
 
-func (i *Instance) Listen(params Parameters) (*telebot.Message, error) {
-	if params.Context == nil {
-		return &telebot.Message{}, ErrContextIsNil
+func (i *Instance) Listen(params Parameters) (*telebot.Message, *telebot.Message, error) {
+	var sentMessage *telebot.Message
+
+	if params.Chat.ID == 0 {
+		return sentMessage, &telebot.Message{}, ErrChatIsNil
 	}
 
 	if params.Timeout == 0 {
@@ -116,23 +120,28 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, error) {
 	}
 
 	if params.Message != "" {
-		params.Context.Send(params.Message)
+		var err error
+		sentMessage, err = i.Bot.Send(params.Chat, params.Message)
+
+		if err != nil {
+			return sentMessage, &telebot.Message{}, err
+		}
 	}
 
 	messageChannel := make(chan *telebot.Message)
 
-	i.Channel[params.Context.Chat().ID] = &messageChannel
+	i.Channel[params.Chat.ID] = &messageChannel
 
 	select {
 	case response := <-messageChannel:
-		delete(i.Channel, params.Context.Chat().ID)
+		delete(i.Channel, params.Chat.ID)
 
 		if response.Text == params.Cancel {
-			return response, ErrCancelCommand
+			return sentMessage, response, ErrCancelCommand
 		}
 
-		return response, nil
+		return sentMessage, response, nil
 	case <-time.After(params.Timeout):
-		return &telebot.Message{}, ErrTimeoutExceeded
+		return sentMessage, &telebot.Message{}, ErrTimeoutExceeded
 	}
 }
