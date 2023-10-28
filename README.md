@@ -39,7 +39,8 @@ func main() {
 			return c.Send("You didn't type anything, please rerun the command :/")
 		}
 
-		return b.Edit(msg, answer.Text)
+		_, err = b.Edit(msg, "You said: " + answer.Text)
+		return err
 	})
 }
 ```
