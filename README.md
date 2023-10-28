@@ -6,6 +6,10 @@ Functions: Listen for incoming messages
 
 **Update:** Cauliflower now works with Middleware instead of bot.Handle() allowing to create handlers
 
+## Todo
+
+[ ] Fix one handler only
+
 ## Quickstart
 
 ### Installation:

@@ -73,7 +73,6 @@ func NewInstance(settings Settings) (*Instance, error) {
 	}
 
 	for _, handler := range settings.Handlers {
-		settings.Bot.Handle(handler, func(c telebot.Context) error { return nil })
 	}
 
 	return &i, nil
@@ -103,30 +102,16 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, error) {
 		params.Context.Send(params.Message)
 	}
 
-	ch := make(chan *telebot.Message)
+	messageChannel := make(chan *telebot.Message)
 
-	i.Channel[params.Context.Chat().ID] = &ch
+	i.Channel[params.Context.Chat().ID] = &messageChannel
 
-	message := make(chan *telebot.Message)
-	error := make(chan error)
-
-	go func() {
-		select {
-		case response := <-ch:
-			message <- response
-			error <- nil
-		case <-time.After(params.Timeout):
-			message <- &telebot.Message{}
-			error <- ErrTimeoutExceeded
-		}
-	}()
-
-	response := <-message
-	err := <-error
-
-	if err != nil {
-		return &telebot.Message{}, err
+	
+	select {
+	case response := <-messageChannel:
+		delete(i.Channel, params.Context.Chat().ID)
+		return response, nil
+	case <-time.After(params.Timeout):
+		return &telebot.Message{}, ErrTimeoutExceeded
 	}
-
-	return response, nil
 }
