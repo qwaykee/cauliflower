@@ -8,6 +8,7 @@ import (
 
 var (
 	ErrTimeoutExceeded = errors.New("cauliflower: Didn't receive a message before the end of the timeout")
+	ErrCancelCommand   = errors.New("cauliflower: Listen function has been canceled")
 	ErrBotIsNil        = errors.New("cauliflower: Settings.Bot can't be nil")
 	ErrContextIsNil    = errors.New("cauliflower: Parameters.Context can't be nil")
 )
@@ -15,6 +16,7 @@ var (
 type Instance struct {
 	Bot     *telebot.Bot
 	Timeout time.Duration
+	Cancel 	string
 	Channel map[int64](*chan *telebot.Message)
 }
 
@@ -25,6 +27,11 @@ type Settings struct {
 	// Will be overridden if Listen() call has Parameters.Timeout field filled
 	// Optional, default: 1 * time.Minute
 	Timeout time.Duration
+
+	// Default cancel command for Listen()
+	// Will be overridden if Listen() call has Parameters.Cancel field filled
+	// Optional
+	Cancel string
 
 	// List of dummy handlers to create in order to make Listen() work
 	// Will be overridden if instance is created before creating another handle
@@ -43,6 +50,10 @@ type Parameters struct {
 	// Timeout before listener is cancelled
 	// Optional, default: Instance.Settings.Timeout
 	Timeout time.Duration
+
+	// Cancel command to cancel listening
+	// Optional
+	Cancel string
 
 	// Message to send in chat before listener starts
 	// Optional
@@ -65,6 +76,7 @@ func NewInstance(settings Settings) (*Instance, error) {
 	i := Instance{
 		Bot:     settings.Bot,
 		Timeout: settings.Timeout,
+		Cancel:  settings.Cancel,
 		Channel: make(map[int64](*chan *telebot.Message)),
 	}
 
@@ -73,6 +85,7 @@ func NewInstance(settings Settings) (*Instance, error) {
 	}
 
 	for _, handler := range settings.Handlers {
+		settings.Bot.Handle(handler, func(c telebot.Context) error { return nil })
 	}
 
 	return &i, nil
@@ -98,6 +111,10 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, error) {
 		params.Timeout = i.Timeout
 	}
 
+	if params.Cancel == "" {
+		params.Cancel = i.Cancel
+	}
+
 	if params.Message != "" {
 		params.Context.Send(params.Message)
 	}
@@ -105,11 +122,15 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, error) {
 	messageChannel := make(chan *telebot.Message)
 
 	i.Channel[params.Context.Chat().ID] = &messageChannel
-
 	
 	select {
 	case response := <-messageChannel:
 		delete(i.Channel, params.Context.Chat().ID)
+		
+		if response.Text == params.Cancel {
+			return response, ErrCancelCommand
+		}
+
 		return response, nil
 	case <-time.After(params.Timeout):
 		return &telebot.Message{}, ErrTimeoutExceeded

@@ -53,6 +53,7 @@ What it does:
 
 Fields explanation:
 - Timeout: A default timeout for all Listen functions that will be called without the Timeout field
+- Cancel: A default cancel command for all Listen functions that will be called without the Cancel field
 - Handlers: The type of messages you want to use with the Listen functions
 - InstallMiddleware: Automatically install middleware instead of doing it manually
 
@@ -60,6 +61,7 @@ Fields explanation:
 i, err := cauliflower.NewInstance(cauliflower.Settings{
 	Bot: 				*telebot.Bot, 	// required
 	Timeout: 			time.Duration, 	// optional, default: 1 * time.Minute
+	Cancel: 			string, 		// optional
 	Handlers: 			[]string, 		// optional, default: []string{telebot.OnText}
 	InstallMiddleware: 	bool,			// optional, default: false
 }) // will return *cauliflower.Instance, error
@@ -76,17 +78,19 @@ What it does:
 
 Fields explanation:
 - Timeout: The maximum time to wait for the message
+- Cancel: Text to cancel the Listen function
 - Message: A message to send before listening
 
 ```golang
 answer, err := i.Listen(cauliflower.Parameters{
 	Context: telebot.Context, 	// required
 	Timeout: time.Duration,		// optional, default: Instance.Settings.Timeout
+	Cancel:  string, 			// optional
 	Message: string, 			// optional, default: nil
 }) // will return *telebot.Message, error
 if err == cauliflower.ErrTimeoutExceeded {
 	return c.Send("You didn't type anything, please rerun the command :/")
-	// Possible error: ErrContextIsNil, ErrTimeoutExceeded
+	// Possible error: ErrContextIsNil, ErrTimeoutExceeded, ErrCancelCommand
 }
 ```
 
