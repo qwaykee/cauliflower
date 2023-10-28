@@ -18,30 +18,30 @@ Functions: Listen for incoming messages
 package main
 
 import (
-	"gopkg.in/telebot.v3"
-	"github.com/qwaykee/cauliflower"
+    "gopkg.in/telebot.v3"
+    "github.com/qwaykee/cauliflower"
 )
 
 func main() {
-	b, _ := telebot.NewBot(telebot.Settings{ ... })
+    b, _ := telebot.NewBot(telebot.Settings{ ... })
 
-	i, _ := cauliflower.NewInstance(cauliflower.Settings{
-		Bot: b,
-		TimeoutHandler: func(c telebot.Context) error {
-			return c.Send("You didn't type anything, please rerun the command :/")
-		}
-		InstallMiddleware: true,
-	})
+    i, _ := cauliflower.NewInstance(cauliflower.Settings{
+        Bot: b,
+        TimeoutHandler: func(c telebot.Context) error {
+            return c.Send("You didn't type anything, please rerun the command :/")
+        }
+        InstallMiddleware: true,
+    })
 
-	b.Handle("/echo", func (c telebot.Context) error {
-		msg, answer, _ := i.Listen(cauliflower.Parameters{
-			Chat: c.Chat(),
-			Message: "Please enter a text:",
-		})
+    b.Handle("/echo", func (c telebot.Context) error {
+        msg, answer, _ := i.Listen(cauliflower.Parameters{
+            Chat: c.Chat(),
+            Message: "Please enter a text:",
+        })
 
-		_, err = b.Edit(msg, "You said: " + answer.Text)
-		return err
-	})
+        _, err = b.Edit(msg, "You said: " + answer.Text)
+        return err
+    })
 }
 ```
 
@@ -62,17 +62,17 @@ Fields explanation:
 
 ```golang
 i, err := cauliflower.NewInstance(cauliflower.Settings{
-	Bot: 				*telebot.Bot, 					// required
-	Timeout: 			time.Duration, 					// optional, default: 1 * time.Minute
-	Cancel: 			string, 						// optional
-	TimeoutHandler: 	func(telebot.Context) error, 	// optional
-	CancelHandler: 		func(telebot.Context) error, 	// optional
-	Handlers: 			[]string, 						// optional, default: []string{telebot.OnText}
-	InstallMiddleware: 	bool,							// optional, default: false
+    Bot:                *telebot.Bot,                   // required
+    Timeout:            time.Duration,                  // optional, default: 1 * time.Minute
+    Cancel:             string,                         // optional
+    TimeoutHandler:     func(telebot.Context) error,    // optional
+    CancelHandler:      func(telebot.Context) error,    // optional
+    Handlers:           []string,                       // optional, default: []string{telebot.OnText}
+    InstallMiddleware:  bool,                           // optional, default: false
 }) // will return *cauliflower.Instance, error
 if err != nil {
-	panic(err)
-	// Possible error: ErrBotIsNil
+    panic(err)
+    // Possible error: ErrBotIsNil
 }
 ```
 
@@ -90,16 +90,16 @@ Fields explanation:
 
 ```golang
 answer, err := i.Listen(cauliflower.Parameters{
-	Chat:    		*telebot.Chat, 					// required
-	Timeout: 		time.Duration,					// optional, default: Instance.Settings.Timeout
-	Cancel:  		string, 						// optional
-	TimeoutHandler: func(telebot.Context) error, 	// optional
-	CancelHandler: 	func(telebot.Context) error, 	// optional
-	Message: 		string, 						// optional, default: nil
+    Chat:           *telebot.Chat,                  // required
+    Timeout:        time.Duration,                  // optional, default: Instance.Settings.Timeout
+    Cancel:         string,                         // optional
+    TimeoutHandler: func(telebot.Context) error,    // optional
+    CancelHandler:  func(telebot.Context) error,    // optional
+    Message:        string,                         // optional, default: nil
 }) // will return *telebot.Message, error
 if err == cauliflower.ErrTimeoutExceeded {
-	return c.Send("You didn't type anything, please rerun the command :/")
-	// Possible error: ErrContextIsNil, ErrTimeoutExceeded, ErrCancelCommand, telebot error (bot.Send)
+    return c.Send("You didn't type anything, please rerun the command :/")
+    // Possible error: ErrContextIsNil, ErrTimeoutExceeded, ErrCancelCommand, telebot error (bot.Send)
 }
 ```
 
