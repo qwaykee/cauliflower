@@ -16,7 +16,7 @@ var (
 type Instance struct {
 	Bot     *telebot.Bot
 	Timeout time.Duration
-	Cancel 	string
+	Cancel  string
 	Channel map[int64](*chan *telebot.Message)
 }
 
@@ -122,11 +122,11 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, error) {
 	messageChannel := make(chan *telebot.Message)
 
 	i.Channel[params.Context.Chat().ID] = &messageChannel
-	
+
 	select {
 	case response := <-messageChannel:
 		delete(i.Channel, params.Context.Chat().ID)
-		
+
 		if response.Text == params.Cancel {
 			return response, ErrCancelCommand
 		}
