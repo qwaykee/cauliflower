@@ -31,7 +31,7 @@ func main() {
 	})
 
 	b.Handle("/echo", func (c telebot.Context) error {
-		answer, err := i.Listen(cauliflower.Parameters{
+		msg, answer, err := i.Listen(cauliflower.Parameters{
 			Chat: c.Chat(),
 			Message: "Please enter a text:",
 		})
@@ -39,7 +39,7 @@ func main() {
 			return c.Send("You didn't type anything, please rerun the command :/")
 		}
 
-		return c.Send(answer.Text)
+		return b.Edit(msg, answer.Text)
 	})
 }
 ```
