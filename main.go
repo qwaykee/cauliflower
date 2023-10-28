@@ -14,24 +14,32 @@ var (
 )
 
 type Instance struct {
-	Bot     *telebot.Bot
-	Timeout time.Duration
-	Cancel  string
-	Channel map[int64](*chan *telebot.Message)
+	Bot            *telebot.Bot
+	Timeout        time.Duration
+	Cancel         string
+	TimeoutHandler func(telebot.Context) error
+	CancelHandler  func(telebot.Context) error
+	Channel        map[int64](*chan *telebot.Message)
 }
 
 type Settings struct {
 	Bot *telebot.Bot
 
 	// Default timeout for every Listen() call
-	// Will be overridden if Listen() call has Parameters.Timeout field filled
 	// Optional, default: 1 * time.Minute
 	Timeout time.Duration
 
 	// Default cancel command for Listen()
-	// Will be overridden if Listen() call has Parameters.Cancel field filled
 	// Optional
 	Cancel string
+
+	// Default function to execute in case of timeout error
+	// Optional
+	TimeoutHandler func(telebot.Context) error
+
+	// Default function to execute in case of cancel error
+	// Optional
+	CancelHandler func(telebot.Context) error
 
 	// List of dummy handlers to create in order to make Listen() work
 	// Will be overridden if instance is created before creating another handle
@@ -45,13 +53,20 @@ type Settings struct {
 }
 
 type Parameters struct {
-	// Current chat (Context.Chat())
 	// Required
-	Chat *telebot.Chat
+	Context telebot.Context
 
 	// Timeout before listener is cancelled
 	// Optional, default: Instance.Settings.Timeout
 	Timeout time.Duration
+
+	// Function to execute in case of timeout error
+	// Optional
+	TimeoutHandler func(telebot.Context) error
+
+	// Function to execute in case of cancel error
+	// Optional
+	CancelHandler func(telebot.Context) error
 
 	// Cancel command to cancel listening
 	// Optional
@@ -76,10 +91,12 @@ func NewInstance(settings Settings) (*Instance, error) {
 	}
 
 	i := Instance{
-		Bot:     settings.Bot,
-		Timeout: settings.Timeout,
-		Cancel:  settings.Cancel,
-		Channel: make(map[int64](*chan *telebot.Message)),
+		Bot:            settings.Bot,
+		Timeout:        settings.Timeout,
+		Cancel:         settings.Cancel,
+		TimeoutHandler: settings.TimeoutHandler,
+		CancelHandler:  settings.CancelHandler,
+		Channel:        make(map[int64](*chan *telebot.Message)),
 	}
 
 	if settings.InstallMiddleware {
@@ -107,7 +124,7 @@ func (i *Instance) Middleware() telebot.MiddlewareFunc {
 func (i *Instance) Listen(params Parameters) (*telebot.Message, *telebot.Message, error) {
 	var sentMessage *telebot.Message
 
-	if params.Chat.ID == 0 {
+	if params.Context.Chat().ID == 0 {
 		return sentMessage, &telebot.Message{}, ErrChatIsNil
 	}
 
@@ -119,9 +136,17 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, *telebot.Message
 		params.Cancel = i.Cancel
 	}
 
+	if params.TimeoutHandler == nil {
+		params.TimeoutHandler = i.TimeoutHandler
+	}
+
+	if params.CancelHandler == nil {
+		params.CancelHandler = i.CancelHandler
+	}
+
 	if params.Message != "" {
 		var err error
-		sentMessage, err = i.Bot.Send(params.Chat, params.Message)
+		sentMessage, err = i.Bot.Send(params.Context.Chat(), params.Message)
 
 		if err != nil {
 			return sentMessage, &telebot.Message{}, err
@@ -130,18 +155,24 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, *telebot.Message
 
 	messageChannel := make(chan *telebot.Message)
 
-	i.Channel[params.Chat.ID] = &messageChannel
+	i.Channel[params.Context.Chat().ID] = &messageChannel
 
 	select {
 	case response := <-messageChannel:
-		delete(i.Channel, params.Chat.ID)
+		delete(i.Channel, params.Context.Chat().ID)
 
 		if response.Text == params.Cancel {
+			if params.CancelHandler != nil {
+				params.CancelHandler(params.Context)
+			}
 			return sentMessage, response, ErrCancelCommand
 		}
 
 		return sentMessage, response, nil
 	case <-time.After(params.Timeout):
+		if params.TimeoutHandler != nil {
+			params.TimeoutHandler(params.Context)
+		}
 		return sentMessage, &telebot.Message{}, ErrTimeoutExceeded
 	}
 }

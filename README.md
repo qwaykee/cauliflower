@@ -27,17 +27,17 @@ func main() {
 
 	i, _ := cauliflower.NewInstance(cauliflower.Settings{
 		Bot: b,
+		TimeoutHandler: func(c telebot.Context) error {
+			return c.Send("You didn't type anything, please rerun the command :/")
+		}
 		InstallMiddleware: true,
 	})
 
 	b.Handle("/echo", func (c telebot.Context) error {
-		msg, answer, err := i.Listen(cauliflower.Parameters{
+		msg, answer, _ := i.Listen(cauliflower.Parameters{
 			Chat: c.Chat(),
 			Message: "Please enter a text:",
 		})
-		if err == cauliflower.ErrTimeoutExceeded {
-			return c.Send("You didn't type anything, please rerun the command :/")
-		}
 
 		_, err = b.Edit(msg, "You said: " + answer.Text)
 		return err
@@ -55,16 +55,20 @@ What it does:
 Fields explanation:
 - Timeout: A default timeout for all Listen functions that will be called without the Timeout field
 - Cancel: A default cancel command for all Listen functions that will be called without the Cancel field
+- TimeoutHandler: A default function to execute in case of timeout error, allows less redundancy in the code
+- CancelHandler: A default function to execute in case of cancel error, allows less redundancy in the code
 - Handlers: The type of messages you want to use with the Listen functions
 - InstallMiddleware: Automatically install middleware instead of doing it manually
 
 ```golang
 i, err := cauliflower.NewInstance(cauliflower.Settings{
-	Bot: 				*telebot.Bot, 	// required
-	Timeout: 			time.Duration, 	// optional, default: 1 * time.Minute
-	Cancel: 			string, 		// optional
-	Handlers: 			[]string, 		// optional, default: []string{telebot.OnText}
-	InstallMiddleware: 	bool,			// optional, default: false
+	Bot: 				*telebot.Bot, 					// required
+	Timeout: 			time.Duration, 					// optional, default: 1 * time.Minute
+	Cancel: 			string, 						// optional
+	TimeoutHandler: 	func(telebot.Context) error, 	// optional
+	CancelHandler: 		func(telebot.Context) error, 	// optional
+	Handlers: 			[]string, 						// optional, default: []string{telebot.OnText}
+	InstallMiddleware: 	bool,							// optional, default: false
 }) // will return *cauliflower.Instance, error
 if err != nil {
 	panic(err)
@@ -80,14 +84,18 @@ What it does:
 Fields explanation:
 - Timeout: The maximum time to wait for the message
 - Cancel: Text to cancel the Listen function
+- TimeoutHandler: Function to execute in case of timeout error
+- CancelHandler: Function to execute in case of cancel error
 - Message: A message to send before listening
 
 ```golang
 answer, err := i.Listen(cauliflower.Parameters{
-	Chat:    *telebot.Chat, 	// required
-	Timeout: time.Duration,		// optional, default: Instance.Settings.Timeout
-	Cancel:  string, 			// optional
-	Message: string, 			// optional, default: nil
+	Chat:    		*telebot.Chat, 					// required
+	Timeout: 		time.Duration,					// optional, default: Instance.Settings.Timeout
+	Cancel:  		string, 						// optional
+	TimeoutHandler: func(telebot.Context) error, 	// optional
+	CancelHandler: 	func(telebot.Context) error, 	// optional
+	Message: 		string, 						// optional, default: nil
 }) // will return *telebot.Message, error
 if err == cauliflower.ErrTimeoutExceeded {
 	return c.Send("You didn't type anything, please rerun the command :/")
