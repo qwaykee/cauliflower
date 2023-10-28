@@ -27,12 +27,10 @@ func main() {
 
 	i, _ := cauliflower.NewInstance(cauliflower.Settings{
 		Bot: b,
-		Timeout: 1 * time.Minute,
-		Filters: []string{telebot.OnText},
 		InstallMiddleware: true,
 	})
 
-	b.Handle("/echo", func (c telebot.Context) {
+	b.Handle("/echo", func (c telebot.Context) error {
 		answer, err := i.Listen(cauliflower.Parameters{
 			Context: c,
 			Message: "Please enter a text:",
@@ -41,7 +39,7 @@ func main() {
 			return c.Send("You didn't type anything, please rerun the command :/")
 		}
 
-		c.Send(answer.Text)
+		return c.Send(answer.Text)
 	})
 }
 ```
