@@ -90,7 +90,7 @@ Fields explanation:
 - Edit: Edit the message instead of sending a new one
 
 ```golang
-answer, err := i.Listen(cauliflower.Parameters{
+msg, answer, err := i.Listen(cauliflower.Parameters{
     Chat:           *telebot.Chat,                  // required
     Timeout:        time.Duration,                  // optional, default: Instance.Settings.Timeout
     Cancel:         string,                         // optional, default: Instance.Settings.Cancel
