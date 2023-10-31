@@ -87,15 +87,17 @@ Fields explanation:
 - TimeoutHandler: Function to execute in case of timeout error
 - CancelHandler: Function to execute in case of cancel error
 - Message: A message to send before listening
+- Edit: Edit the message instead of sending a new one
 
 ```golang
 answer, err := i.Listen(cauliflower.Parameters{
     Chat:           *telebot.Chat,                  // required
     Timeout:        time.Duration,                  // optional, default: Instance.Settings.Timeout
-    Cancel:         string,                         // optional
-    TimeoutHandler: func(telebot.Context) error,    // optional
-    CancelHandler:  func(telebot.Context) error,    // optional
+    Cancel:         string,                         // optional, default: Instance.Settings.Cancel
+    TimeoutHandler: func(telebot.Context) error,    // optional, default: Instance.Settings.TimeoutHandler
+    CancelHandler:  func(telebot.Context) error,    // optional, default: Instance.Settings.CancelHandler
     Message:        string,                         // optional, default: nil
+    Edit:           telebot.Editable,               // optional, default: nil
 }) // will return *telebot.Message, error
 if err == cauliflower.ErrTimeoutExceeded {
     return c.Send("You didn't type anything, please rerun the command :/")

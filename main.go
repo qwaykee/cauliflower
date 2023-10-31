@@ -75,6 +75,10 @@ type Parameters struct {
 	// Message to send in chat before listener starts
 	// Optional
 	Message string
+
+	// Will edit the message instead of sending a new one
+	// Optional, default: nil
+	Edit telebot.Editable
 }
 
 func NewInstance(settings Settings) (*Instance, error) {
@@ -146,7 +150,11 @@ func (i *Instance) Listen(params Parameters) (*telebot.Message, *telebot.Message
 
 	if params.Message != "" {
 		var err error
-		sentMessage, err = i.Bot.Send(params.Context.Chat(), params.Message)
+		if params.Edit != nil {
+			sentMessage, err = i.Bot.Edit(params.Edit, params.Message)
+		} else {
+			sentMessage, err = i.Bot.Send(params.Context.Chat(), params.Message)
+		}
 
 		if err != nil {
 			return sentMessage, &telebot.Message{}, err
