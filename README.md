@@ -8,11 +8,11 @@ Functions: Listen for incoming messages
 
 ## Quickstart
 
-### Installation:
+##### Installation:
 
 `go get github.com/qwaykee/cauliflower`
 
-### Code:
+##### Code:
 
 ```golang
 package main
