@@ -2,109 +2,93 @@ package cauliflower
 
 import (
 	"errors"
-	"gopkg.in/telebot.v3"
 	"time"
+	"gopkg.in/telebot.v3"
 )
 
 var (
-	ErrTimeoutExceeded = errors.New("cauliflower: Didn't receive a message before the end of the timeout")
-	ErrCancelCommand   = errors.New("cauliflower: Listen function has been canceled")
-	ErrBotIsNil        = errors.New("cauliflower: Settings.Bot can't be nil")
-	ErrChatIsNil       = errors.New("cauliflower: Parameters.Chat can't be nil")
+	// global error
+	ErrNoOptionsProvided = errors.New("cauliflower: no options provided")
+
+	// main.go error
+	ErrBotIsNil = errors.New("cauliflower: Settings.Bot can't be nil")
 )
 
 type Instance struct {
-	Bot            *telebot.Bot
-	Timeout        time.Duration
-	Cancel         string
-	TimeoutHandler func(telebot.Context) error
-	CancelHandler  func(telebot.Context) error
-	Channel        map[int64](*chan *telebot.Message)
+	Bot             *telebot.Bot
+	DefaultListen   *ListenOptions
+	DefaultKeyboard *KeyboardOptions
+	Channel         map[int64](*chan *telebot.Message)
 }
 
 type Settings struct {
+	// Required
 	Bot *telebot.Bot
-
-	// Default timeout for every Listen() call
-	// Optional, default: 1 * time.Minute
-	Timeout time.Duration
-
-	// Default cancel command for Listen()
-	// Optional
-	Cancel string
-
-	// Default function to execute in case of timeout error
-	// Optional
-	TimeoutHandler func(telebot.Context) error
-
-	// Default function to execute in case of cancel error
-	// Optional
-	CancelHandler func(telebot.Context) error
-
-	// List of dummy handlers to create in order to make Listen() work
-	// Will be overridden if instance is created before creating another handle
-	// Recommended, default: telebot.OnText
-	Handlers []string
 
 	// Automatically install middleware instead of doing it manually
 	// Execute: Bot.Use(i.Middleware())
 	// Optional, default: false
 	InstallMiddleware bool
+
+	// Default options for Listen()
+	// Optional
+	DefaultListen *ListenOptions
+
+	// Default options for Keyboard()
+	// Optional
+	DefaultKeyboard *KeyboardOptions
+
+	// List of dummy handlers to create in order to make Listen() work
+	// Will be overridden if instance is created before creating another handle
+	// Optional, default: telebot.OnText
+	Handlers []string
 }
 
-type Parameters struct {
-	// Required
-	Context telebot.Context
+func NewInstance(settings *Settings) (*Instance, error) {
+	// handle errors
+	if settings == nil {
+		return nil, ErrNoOptionsProvided
+	}
 
-	// Timeout before listener is cancelled
-	// Optional, default: Instance.Settings.Timeout
-	Timeout time.Duration
-
-	// Function to execute in case of timeout error
-	// Optional
-	TimeoutHandler func(telebot.Context) error
-
-	// Function to execute in case of cancel error
-	// Optional
-	CancelHandler func(telebot.Context) error
-
-	// Cancel command to cancel listening
-	// Optional
-	Cancel string
-
-	// Message to send in chat before listener starts
-	// Optional
-	Message string
-
-	// Will edit the message instead of sending a new one
-	// Optional, default: nil
-	Edit telebot.Editable
-}
-
-func NewInstance(settings Settings) (*Instance, error) {
 	if settings.Bot == nil {
 		return nil, ErrBotIsNil
 	}
 
-	if settings.Timeout == 0 {
-		settings.Timeout = 1 * time.Minute
+	// handle listen defaults
+	if settings.DefaultListen == nil {
+		settings.DefaultListen = &ListenOptions{}
 	}
 
-	if len(settings.Handlers) == 0 {
-		settings.Handlers = []string{telebot.OnText}
+	if settings.DefaultListen.Timeout == 0 {
+		settings.DefaultListen.Timeout = 1 * time.Minute
+	}
+
+	// handle keyboard defaults
+	if settings.DefaultKeyboard == nil {
+		settings.DefaultKeyboard = &KeyboardOptions{}
+	}
+
+	if settings.DefaultKeyboard.ReplyMarkup == nil {
+		settings.DefaultKeyboard.ReplyMarkup = &telebot.ReplyMarkup{}
+	}
+
+	if settings.DefaultKeyboard.Keyboard == "" {
+		settings.DefaultKeyboard.Keyboard = Inline
 	}
 
 	i := Instance{
-		Bot:            settings.Bot,
-		Timeout:        settings.Timeout,
-		Cancel:         settings.Cancel,
-		TimeoutHandler: settings.TimeoutHandler,
-		CancelHandler:  settings.CancelHandler,
-		Channel:        make(map[int64](*chan *telebot.Message)),
+		Bot:             settings.Bot,
+		DefaultListen:   settings.DefaultListen,
+		DefaultKeyboard: settings.DefaultKeyboard,
+		Channel:         make(map[int64](*chan *telebot.Message)),
 	}
 
 	if settings.InstallMiddleware {
 		settings.Bot.Use(i.Middleware())
+	}
+
+	if len(settings.Handlers) == 0 {
+		settings.Handlers = []string{telebot.OnText}
 	}
 
 	for _, handler := range settings.Handlers {
@@ -122,65 +106,5 @@ func (i *Instance) Middleware() telebot.MiddlewareFunc {
 			}
 			return next(c)
 		}
-	}
-}
-
-func (i *Instance) Listen(params Parameters) (*telebot.Message, *telebot.Message, error) {
-	var sentMessage *telebot.Message
-
-	if params.Context.Chat().ID == 0 {
-		return sentMessage, &telebot.Message{}, ErrChatIsNil
-	}
-
-	if params.Timeout == 0 {
-		params.Timeout = i.Timeout
-	}
-
-	if params.Cancel == "" {
-		params.Cancel = i.Cancel
-	}
-
-	if params.TimeoutHandler == nil {
-		params.TimeoutHandler = i.TimeoutHandler
-	}
-
-	if params.CancelHandler == nil {
-		params.CancelHandler = i.CancelHandler
-	}
-
-	if params.Message != "" {
-		var err error
-		if params.Edit != nil {
-			sentMessage, err = i.Bot.Edit(params.Edit, params.Message)
-		} else {
-			sentMessage, err = i.Bot.Send(params.Context.Chat(), params.Message)
-		}
-
-		if err != nil {
-			return sentMessage, &telebot.Message{}, err
-		}
-	}
-
-	messageChannel := make(chan *telebot.Message)
-
-	i.Channel[params.Context.Chat().ID] = &messageChannel
-
-	select {
-	case response := <-messageChannel:
-		delete(i.Channel, params.Context.Chat().ID)
-
-		if response.Text == params.Cancel {
-			if params.CancelHandler != nil {
-				params.CancelHandler(params.Context)
-			}
-			return sentMessage, response, ErrCancelCommand
-		}
-
-		return sentMessage, response, nil
-	case <-time.After(params.Timeout):
-		if params.TimeoutHandler != nil {
-			params.TimeoutHandler(params.Context)
-		}
-		return sentMessage, &telebot.Message{}, ErrTimeoutExceeded
 	}
 }
