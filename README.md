@@ -123,12 +123,12 @@ Fields explanation:
 
 ```golang
 markup, err := i.Keyboard(&cauliflower.KeyboardOptions{
-    ReplyMarkup: *telebot.ReplyMarkup
-    Keyboard:    string
-    Rows:        [][]string
-    Row:         []string
-    Split:       int
-    Handler:     func(c telebot.Context) error
+    ReplyMarkup: *telebot.ReplyMarkup,             // optional, default: Instance.DefaultKeyboard.ReplyMarkup
+    Keyboard:    string,                           // optional, default: Instance.DefaultKeyboard.Keyboard
+    Rows:        [][]string,                       // required if Row isn't set
+    Row:         []string,                         // required if Rows isn't set
+    Split:       int,                              // optional
+    Handler:     func(c telebot.Context) error,    // optional
 })
 if err != nil {
     panic(err)
