@@ -116,6 +116,7 @@ What it does:
 Fields explanation:
 - ReplyMarkup: Use a custom markup instead of the default one
 - Keyboard: Type of keyboard to create (cauliflower.Inline or cauliflower.Reply)
+- DataRow: Text and value of each button
 - Rows: Text of each button already splitted
 - Row: Text of each button
 - Split: Will split the buttons if Row is used
@@ -125,8 +126,9 @@ Fields explanation:
 markup, err := i.Keyboard(&cauliflower.KeyboardOptions{
     ReplyMarkup: *telebot.ReplyMarkup,             // optional, default: Instance.DefaultKeyboard.ReplyMarkup
     Keyboard:    string,                           // optional, default: Instance.DefaultKeyboard.Keyboard
-    Rows:        [][]string,                       // required if Row isn't set
-    Row:         []string,                         // required if Rows isn't set
+    DataRow:     map[string]string,                // required to choose between DataRow, Rows or Row
+    Rows:        [][]string,                       // required to choose between DataRow, Rows or Row
+    Row:         []string,                         // required to choose between DataRow, Rows or Row
     Split:       int,                              // optional
     Handler:     func(c telebot.Context) error,    // optional
 })

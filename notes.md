@@ -3,7 +3,7 @@
 - [x] handle defaults in main.go
 - [x] doc readme.md
 - [x] doc comments listen.go
-- [ ] add dictionnary keyboard
+- [x] add dictionnary keyboard
 
 # Defaults
 
