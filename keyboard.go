@@ -1,19 +1,20 @@
 package cauliflower
 
 import (
-	"gopkg.in/telebot.v3"
 	"errors"
+	"gopkg.in/telebot.v3"
 	"math/rand"
+	"reflect"
 )
 
 const (
-	Reply string = "reply"
+	Reply  string = "reply"
 	Inline string = "inline"
 )
 
 var (
-	ErrRowsConflict = errors.New("cauliflower: only one of Rows, Row or DataRows can be set")
-	ErrNoRowsProvided = errors.New("cauliflower: neither Rows or Row has been set")
+	ErrRowsConflict    = errors.New("cauliflower: only one of Rows, Row or DataRows can be set")
+	ErrNoRowsProvided  = errors.New("cauliflower: neither Rows or Row has been set")
 	ErrInvalidKeyboard = errors.New("cauliflower: Keyboard is neither Inline or Reply")
 	ErrOptionsConflict = errors.New("cauliflower: Rows and Split can not be set together")
 )
@@ -21,7 +22,7 @@ var (
 type KeyboardOptions struct {
 	// Optional, Custom ReplyMarkup to use
 	// Default: telebot.ReplyMarkup{}
-	ReplyMarkup *telebot.ReplyMarkup
+	ReplyMarkup telebot.ReplyMarkup
 
 	// Optional, Keyboard type (cauliflower.Reply or cauliflower.Inline)
 	// Default: cauliflower.Inline
@@ -56,19 +57,19 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 
 	// handle errors
 	if opts == nil {
-		return m, ErrNoOptionsProvided
+		return &m, ErrNoOptionsProvided
 	}
 
 	if len(opts.Rows) == 0 && len(opts.Row) == 0 && len(opts.DataRow) == 0 {
-		return m, ErrNoRowsProvided
+		return &m, ErrNoRowsProvided
 	}
 
 	if opts.Keyboard != Inline && opts.Keyboard != Reply {
-		return m, ErrInvalidKeyboard
+		return &m, ErrInvalidKeyboard
 	}
 
 	if len(opts.Rows) > 0 && opts.Split != 0 {
-		return m, ErrOptionsConflict
+		return &m, ErrOptionsConflict
 	}
 
 	count := 0
@@ -86,14 +87,14 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 	}
 
 	if count > 1 {
-		return m, ErrRowsConflict
+		return &m, ErrRowsConflict
 	}
 
 	// handle defaults
-	if opts.ReplyMarkup != nil {
+	if !reflect.DeepEqual(opts.ReplyMarkup, telebot.ReplyMarkup{}) {
 		m = opts.ReplyMarkup
 	}
-	
+
 	if opts.Keyboard == "" {
 		opts.Keyboard = i.DefaultKeyboard.Keyboard
 	}
@@ -160,7 +161,7 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 			row = append(row, button)
 		}
 	default:
-		return m, ErrRowsConflict
+		return &m, ErrRowsConflict
 	}
 
 	if opts.Split != 0 {
@@ -175,7 +176,7 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 		m.Reply(rows...)
 	}
 
-	return m, nil
+	return &m, nil
 }
 
 func randomString(n int) string {

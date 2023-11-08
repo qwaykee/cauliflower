@@ -2,8 +2,9 @@ package cauliflower
 
 import (
 	"errors"
-	"time"
 	"gopkg.in/telebot.v3"
+	"reflect"
+	"time"
 )
 
 var (
@@ -68,8 +69,8 @@ func NewInstance(settings *Settings) (*Instance, error) {
 		settings.DefaultKeyboard = &KeyboardOptions{}
 	}
 
-	if settings.DefaultKeyboard.ReplyMarkup == nil {
-		settings.DefaultKeyboard.ReplyMarkup = &telebot.ReplyMarkup{}
+	if reflect.DeepEqual(settings.DefaultKeyboard.ReplyMarkup, telebot.ReplyMarkup{}) {
+		settings.DefaultKeyboard.ReplyMarkup = telebot.ReplyMarkup{}
 	}
 
 	if settings.DefaultKeyboard.Keyboard == "" {

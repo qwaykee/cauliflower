@@ -1,15 +1,15 @@
 package cauliflower
 
 import (
-	"gopkg.in/telebot.v3"
 	"errors"
+	"gopkg.in/telebot.v3"
 	"time"
 )
 
 var (
-	ErrTimeoutExceeded   = errors.New("cauliflower: didn't receive a message before the end of the timeout")
-	ErrCancelCommand     = errors.New("cauliflower: Listen function has been canceled")
-	ErrChatIsNil         = errors.New("cauliflower: ListenOptions.Chat can't be nil")
+	ErrTimeoutExceeded = errors.New("cauliflower: didn't receive a message before the end of the timeout")
+	ErrCancelCommand   = errors.New("cauliflower: Listen function has been canceled")
+	ErrChatIsNil       = errors.New("cauliflower: ListenOptions.Chat can't be nil")
 )
 
 type ListenOptions struct {
