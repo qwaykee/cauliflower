@@ -12,9 +12,10 @@ const (
 )
 
 var (
-	ErrRowsConflict = errors.New("cauliflower: only one of KeyboardOptions.Rows and KeyboardOptions.Row can be set")
-	ErrNoRowsProvided = errors.New("cauliflower: neither KeyboardOptions.Rows or KeyboardOptions.Row has been set")
-	ErrInvalidKeyboard = errors.New("cauliflower: KeyboardOptions.Keyboard is neither Inline or Reply")
+	ErrRowsConflict = errors.New("cauliflower: only one of Rows, Row or DataRows can be set")
+	ErrNoRowsProvided = errors.New("cauliflower: neither Rows or Row has been set")
+	ErrInvalidKeyboard = errors.New("cauliflower: Keyboard is neither Inline or Reply")
+	ErrOptionsConflict = errors.New("cauliflower: Rows and Split can not be set together")
 )
 
 type KeyboardOptions struct {
@@ -26,14 +27,20 @@ type KeyboardOptions struct {
 	// Default: cauliflower.Inline
 	Keyboard string
 
+	// Text and value which will be used to create buttons
+	// Can be used with Split
+	// Required to use one between DataRow, Rows and Row
+	DataRow map[string]string
+
 	// Rows of rows of string which will be used as
 	// text and data when creating the buttons
-	// Required if Row isn't set
+	// Can not be used with Split
+	// Required to use one between DataRow, Rows and Row
 	Rows [][]string
 
 	// Rows of string if Rows is not used
-	// Use with Split
-	// Required if Rows isn't set
+	// Can be used with Split
+	// Required to use one between DataRow, Rows and Row
 	Row []string
 
 	// Will be used with ReplyMarkup.Split()
@@ -52,16 +59,34 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 		return m, ErrNoOptionsProvided
 	}
 
-	if len(opts.Rows) > 0 && len(opts.Row) > 0 {
-		return m, ErrRowsConflict
-	}
-
-	if len(opts.Rows) == 0 && len(opts.Row) == 0 {
+	if len(opts.Rows) == 0 && len(opts.Row) == 0 && len(opts.DataRow) == 0 {
 		return m, ErrNoRowsProvided
 	}
 
 	if opts.Keyboard != Inline && opts.Keyboard != Reply {
 		return m, ErrInvalidKeyboard
+	}
+
+	if len(opts.Rows) > 0 && opts.Split != 0 {
+		return m, ErrOptionsConflict
+	}
+
+	count := 0
+
+	if len(opts.DataRow) > 0 {
+		count++
+	}
+
+	if len(opts.Rows) > 0 {
+		count++
+	}
+
+	if len(opts.Row) > 0 {
+		count++
+	}
+
+	if count > 1 {
+		return m, ErrRowsConflict
 	}
 
 	// handle defaults
@@ -79,11 +104,27 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 
 	// actual code
 	var rows []telebot.Row
+	var row []telebot.Btn
 
-	if opts.Rows != nil {
+	switch {
+	case opts.DataRow != nil:
+		for text, value := range opts.DataRow {
+			var button telebot.Btn
+
+			if opts.Keyboard == Inline {
+				button = m.Data(text, randomString(16), value)
+			} else {
+				button = m.Text(text)
+			}
+
+			if opts.Handler != nil {
+				i.Bot.Handle(&button, opts.Handler)
+			}
+
+			row = append(row, button)
+		}
+	case opts.Rows != nil:
 		for _, r := range opts.Rows {
-			var row []telebot.Btn
-
 			for _, text := range r {
 				var button telebot.Btn
 
@@ -102,9 +143,7 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 
 			rows = append(rows, row)
 		}
-	} else {
-		var row []telebot.Btn
-
+	case opts.Row != nil:
 		for _, text := range opts.Row {
 			var button telebot.Btn
 
@@ -120,12 +159,14 @@ func (i *Instance) Keyboard(opts *KeyboardOptions) (*telebot.ReplyMarkup, error)
 
 			row = append(row, button)
 		}
+	default:
+		return m, ErrRowsConflict
+	}
 
-		if opts.Split != 0 {
-			rows = m.Split(opts.Split, row)
-		} else {
-			rows = append(rows, m.Row(row...))
-		}
+	if opts.Split != 0 {
+		rows = m.Split(opts.Split, row)
+	} else {
+		rows = append(rows, m.Row(row...))
 	}
 
 	if opts.Keyboard == Inline {
