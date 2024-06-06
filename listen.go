@@ -4,6 +4,7 @@ import (
 	"gopkg.in/telebot.v3"
 	"errors"
 	"time"
+	"sync"
 )
 
 var (
@@ -70,7 +71,11 @@ func (i *Instance) Listen(ctx telebot.Context, opts *ListenOptions) (*telebot.Me
 func (i *Instance) listen(ctx telebot.Context, timeout time.Duration) (*telebot.Message, error) {
 	messageChannel := make(chan *telebot.Message)
 
+	i.mutex.Lock()
+
 	i.channel[ctx.Chat().ID] = &messageChannel
+
+	i.mutex.Unlock()
 
 	select {
 	case response := <-messageChannel:

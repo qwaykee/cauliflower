@@ -3,6 +3,7 @@ package cauliflower
 import (
 	"gopkg.in/telebot.v3"
 	"time"
+	"sync"
 )
 
 type (
@@ -11,6 +12,7 @@ type (
 
 		bot             		*telebot.Bot
 		channel         		map[int64](*chan *telebot.Message)
+		mutex 					*sync.Mutex
 	}
 
 	Settings struct {
@@ -37,6 +39,7 @@ func NewInstance(b *telebot.Bot, s *Settings) *Instance {
 		DefaultListenOptions:   s.DefaultListenOptions,
 		bot:             		b,
 		channel:         		make(map[int64](*chan *telebot.Message)),
+		mutex: 					&sync.Mutex{}
 	}
 
 	if s.InstallMiddleware {
