@@ -27,21 +27,24 @@ func main() {
         InstallMiddleware: true,
     })
 
-    menu := i.NewKeyboard(cl.KeyboardInline, 3)
-    menu.Add(cl.ButtonData, echoHandler, "retry")
-
     b.Handle("/echo", echoHandler)
 }
 
 func echoHandler(c telebot.Context) error {
-    c.Send("listening")
+    c.Send("Send a text that will be put into a button...")
 
-    msg, err := i.Listen(c, &cl.ListenOptions{})
+    answer, err := i.Listen(c, cl.TextInput, &cl.ListenOptions{})
     if err != nil {
         return c.Send(err)
     }
 
-    return c.Send(msg.Text, menu.Convert())
+    menu := i.NewKeyboard(cl.KeyboardInline, 2)
+    
+    menu.Add(cl.ButtonData, echoHandler, "Retry")
+    menu.Add(cl.ButtonURL, cl.NoHandler, "Open Google", "https://google.com")
+    menu.Add(cl.ButtonText, cl.NoHandler, answer.Text)
+
+    return c.Send("Here is the requested message with a custom keyboard", menu.Convert())
 }
 ```
 

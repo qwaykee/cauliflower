@@ -44,6 +44,10 @@ const (
 	ButtonWebApp	ButtonType = "webapp"
 )
 
+func NoHandler(c telebot.Context) error {
+	return nil
+}
+
 func (i *Instance) NewKeyboard(keyboardType KeyboardType, split int) *Keyboard {
 	return &Keyboard{
 		KeyboardType: keyboardType,

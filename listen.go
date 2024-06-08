@@ -4,7 +4,6 @@ import (
 	"gopkg.in/telebot.v3"
 	"errors"
 	"time"
-	"sync"
 )
 
 var (
@@ -24,12 +23,11 @@ type (
 	}
 )
 
-func (i *Instance) Listen(ctx telebot.Context, opts *ListenOptions) (*telebot.Message, error) {
-	var receivedMessage *telebot.Message
-	var err error
+func (i *Instance) Listen(c telebot.Context, inputType InputType, opts *ListenOptions) (*telebot.Message, error) {
+	var answer *telebot.Message
 
-	if ctx.Chat() == nil {
-		return receivedMessage, ErrChatIsNil
+	if c.Chat() == nil {
+		return answer, ErrChatIsNil
 	}
 
 	// handle defaults
@@ -49,37 +47,79 @@ func (i *Instance) Listen(ctx telebot.Context, opts *ListenOptions) (*telebot.Me
 		opts.CancelHandler = i.DefaultListenOptions.CancelHandler
 	}
 
-	receivedMessage, err = i.listen(ctx, opts.Timeout)
+	var err error
+
+	answer, err = i.listen(c.Chat().ID, opts.Timeout)
+
+	if inputType != AnyInput {
+		loop:
+		for {
+			switch inputType {
+			case TextInput:
+				if answer.Text != "" { break loop }
+			case PhotoInput:
+				if answer.Photo != nil { break loop }
+			case AudioInput:
+				if answer.Audio != nil { break loop }
+			case VideoInput:
+				if answer.Video != nil { break loop }
+			case DocumentInput:
+				if answer.Document != nil { break loop }
+			case StickerInput:
+				if answer.Sticker != nil { break loop }
+			case VoiceInput:
+				if answer.Voice != nil { break loop }
+			case VideoNoteInput:
+				if answer.VideoNote != nil { break loop }
+			case AnimationInput:
+				if answer.Animation != nil { break loop }
+			case ContactInput:
+				if answer.Contact != nil { break loop }
+			case LocationInput:
+				if answer.Location != nil { break loop }
+			case VenueInput:
+				if answer.Venue != nil { break loop }
+			case PollInput:
+				if answer.Poll != nil { break loop }
+			case GameInput:
+				if answer.Game != nil { break loop }
+			case DiceInput:
+				if answer.Dice != nil { break loop }
+			}
+
+			answer, err = i.listen(c.Chat().ID, opts.Timeout)
+		}
+	}
 
 	if err == ErrTimeoutExceeded {
 		if opts.TimeoutHandler != nil {
-			opts.TimeoutHandler(ctx)
+			opts.TimeoutHandler(c)
 		}
-		return receivedMessage, ErrTimeoutExceeded
+		return answer, err
 	}
 
-	if receivedMessage.Text == opts.CancelCommand {
+	if answer.Text == opts.CancelCommand {
 		if opts.CancelHandler != nil {
-			opts.CancelHandler(ctx)
+			opts.CancelHandler(c)
 		}
-		return receivedMessage, ErrCancelCommand
+		return answer, ErrCancelCommand
 	}
 
-	return receivedMessage, nil
+	return answer, nil
 }
 
-func (i *Instance) listen(ctx telebot.Context, timeout time.Duration) (*telebot.Message, error) {
+func (i *Instance) listen(chatID int64, timeout time.Duration) (*telebot.Message, error) {
 	messageChannel := make(chan *telebot.Message)
 
 	i.mutex.Lock()
 
-	i.channel[ctx.Chat().ID] = &messageChannel
+	i.channel[chatID] = &messageChannel
 
 	i.mutex.Unlock()
 
 	select {
 	case response := <-messageChannel:
-		delete(i.channel, ctx.Chat().ID)
+		delete(i.channel, chatID)
 
 		return response, nil
 	case <-time.After(timeout):

@@ -39,7 +39,7 @@ func NewInstance(b *telebot.Bot, s *Settings) *Instance {
 		DefaultListenOptions:   s.DefaultListenOptions,
 		bot:             		b,
 		channel:         		make(map[int64](*chan *telebot.Message)),
-		mutex: 					&sync.Mutex{}
+		mutex: 					&sync.Mutex{},
 	}
 
 	if s.InstallMiddleware {
