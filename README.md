@@ -2,7 +2,7 @@
 
 A simple [telebot](https://github.com/tucnak/telebot) monkeypatcher
 
-Functions: Listen for incoming messages, create keyboard easily
+Functions: Listen for incoming messages, create keyboard easily, create forms
 
 ## Example
 
