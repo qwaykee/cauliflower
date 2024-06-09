@@ -16,6 +16,9 @@ type (
 		// the timeout will be applied to every step individually
 		Timeout time.Duration
 		TimeoutHandler telebot.HandlerFunc
+		// delay after executing AddMessage() step
+		// useful to avoid sending multiple message at once
+		MessageDelay time.Duration
 		Steps []Step
 		CurrentStep int
 		Answers map[string]*telebot.Message
@@ -65,9 +68,10 @@ const (
 )
 
 // form creation components
-func (i *Instance) NewForm(timeout time.Duration) *Form {
+func (i *Instance) NewForm(timeout, messageDelay time.Duration) *Form {
 	return &Form{
 		Timeout: timeout,
+		MessageDelay: messageDelay,
 		Answers: make(map[string]*telebot.Message),
 		instance: i,
 		stopChannel: make(chan bool),
@@ -201,6 +205,7 @@ func (s *Step) Execute(c telebot.Context) {
 		s.form.Answers[s.UniqueID] = answer
 	case Message:
 		c.Send(s.Message)
+		time.Sleep(s.form.MessageDelay)
 		s.form.Next()
 	case Wait:
 		time.Sleep(s.Wait)

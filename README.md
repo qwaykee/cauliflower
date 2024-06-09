@@ -10,7 +10,7 @@ Functions: Listen for incoming messages, create keyboard easily, create forms
 
 `go get github.com/qwaykee/cauliflower`
 
-##### [Code:](example/echo.go)
+##### [Full example](example/echo.go)
 
 ```golang
 package main

@@ -66,14 +66,12 @@ func echoHandler(c telebot.Context) error {
 }
 
 func formHandler(c telebot.Context) error {
-	f := i.NewForm(10 * time.Second).
+	f := i.NewForm(10 * time.Second, 500 * time.Millisecond).
 		AddMessage("Please enter a number, type 5 if you wish to restart the form when it achieves its end.").
 		AddInput(cl.TextInput, "unique-id", verifyIsNumber).
 		AddMessage("Thanks!").
-		AddWait(250 * time.Millisecond).
 		AddFunction(logFormFunction).
-		AddMessage("I just called a function which logged something, look at your terminal.").
-		AddWait(250 * time.Millisecond)
+		AddMessage("I just called a function which logged something, look at your terminal.")
 
 	f.Send(c)
 

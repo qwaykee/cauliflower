@@ -12,4 +12,4 @@ New keyboard.go, better listen.go
 - [x] Add input verification
 - [ ] Add stop command
 - [x] Move input filters to listen.go
-[ ] subcheck.go
+[x] ~~subcheck.go~~ -> telebot.Bot.ChatMemberOf()
