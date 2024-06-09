@@ -7,7 +7,6 @@ import (
 
 type (
 	StepType string
-	InputType string
 
 	ValidationFunction func(f *Form, c telebot.Context, m *telebot.Message)
 	FormFunction func(f *Form, c telebot.Context)
@@ -16,6 +15,7 @@ type (
 		// the timeout will be applied to every step individually
 		Timeout time.Duration
 		TimeoutHandler telebot.HandlerFunc
+
 		// delay after executing AddMessage() step
 		// useful to avoid sending multiple message at once
 		MessageDelay time.Duration
@@ -48,23 +48,6 @@ const (
 	Message StepType = "message"
 	Wait StepType = "wait"
 	Function StepType = "function"
-
-	TextInput InputType = "text"
-	PhotoInput InputType = "photo"
-	AudioInput InputType = "audio"
-	VideoInput InputType = "video"
-	DocumentInput InputType = "document"
-	StickerInput InputType = "sticker"
-	VoiceInput InputType = "voice"
-	VideoNoteInput InputType = "videonote"
-	AnimationInput InputType = "animation"
-	ContactInput InputType = "contact"
-	LocationInput InputType = "location"
-	VenueInput InputType = "venue"
-	PollInput InputType = "poll"
-	GameInput InputType = "game"
-	DiceInput InputType = "dice"
-	AnyInput InputType = "any"
 )
 
 // form creation components
@@ -145,9 +128,6 @@ func (f *Form) Send(c telebot.Context) {
 	        return
 	    case <-f.continueChannel:
 	        f.CurrentStep++
-	        if f.CurrentStep >= len(f.Steps) {
-	            break
-	        }
 	    case <-f.repeatChannel:
 	        // Don't increment the step, just re-execute the current step
 	    case stepIndex := <-f.skipChannel:

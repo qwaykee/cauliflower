@@ -13,6 +13,10 @@ type (
 		bot             		*telebot.Bot
 		channel         		map[int64](*chan *telebot.Message)
 		mutex 					*sync.Mutex
+
+		messageCount			int
+		responseTime			[]time.Duration
+		usersLanguage			map[int64]string
 	}
 
 	Settings struct {
@@ -29,10 +33,8 @@ type (
 )
 
 func NewInstance(b *telebot.Bot, s *Settings) *Instance {
-	dloPointer := &s.DefaultListenOptions
-
 	if s.DefaultListenOptions.Timeout == 0 {
-		dloPointer.Timeout = time.Minute
+		s.DefaultListenOptions.Timeout = time.Minute
 	}
 
 	i := Instance{
@@ -40,6 +42,7 @@ func NewInstance(b *telebot.Bot, s *Settings) *Instance {
 		bot:             		b,
 		channel:         		make(map[int64](*chan *telebot.Message)),
 		mutex: 					&sync.Mutex{},
+		usersLanguage:         	make(map[int64]string),
 	}
 
 	if s.InstallMiddleware {
@@ -55,15 +58,4 @@ func NewInstance(b *telebot.Bot, s *Settings) *Instance {
 	}
 
 	return &i
-}
-
-func (i *Instance) Middleware() telebot.MiddlewareFunc {
-	return func(next telebot.HandlerFunc) telebot.HandlerFunc {
-		return func(c telebot.Context) error {
-			if ch, ok := i.channel[c.Chat().ID]; ok {
-				*ch <- c.Message()
-			}
-			return next(c)
-		}
-	}
 }

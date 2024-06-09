@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 	"strconv"
+	"fmt"
 )
 
 var (
@@ -30,9 +31,13 @@ func main() {
 		InstallMiddleware: true,
 	})
 
+	b.Use(i.Languages())
+	b.Use(i.Statistics())
+
 	b.Handle("/start", startHandler)
 	b.Handle("/echo", echoHandler)
 	b.Handle("/form", formHandler)
+	b.Handle("/infos", infosHandler)
 
 	log.Println("starting...")
 
@@ -40,12 +45,9 @@ func main() {
 }
 
 func startHandler(c telebot.Context) error {
-	menu := i.NewKeyboard(cl.KeyboardInline, 3)
-	
-	menu.Add(cl.ButtonData, echoHandler, "Echo")
-	menu.Add(cl.ButtonData, formHandler, "Form")
-
-	return c.Send("Type /echo to try the listen and keyboard components\nType /form to try the form component", menu.Convert())
+	return c.Send(`Type /echo to try the listen and keyboard components
+		Type /form to try the form component
+		Type /infos to get infos obtained via the middlewares`)
 }
 
 func echoHandler(c telebot.Context) error {
@@ -76,6 +78,19 @@ func formHandler(c telebot.Context) error {
 	f.Send(c)
 
 	return c.Send("Your entry is " + f.GetAnswer("unique-id").Text)
+}
+
+func infosHandler(c telebot.Context) error {
+	return c.Send(fmt.Sprintf(`Here is some informations:
+		%d actions processed
+		%d users
+		Average response time: %s
+		Language code: %s`,
+		i.GetMessageCount(),
+		i.GetUserCount(),
+		i.GetAverageResponseTime(),
+		i.GetChatLanguage(c.Chat().ID),
+	))
 }
 
 func verifyIsNumber(f *cl.Form, c telebot.Context, m *telebot.Message) {

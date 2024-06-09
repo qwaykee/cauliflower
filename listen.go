@@ -13,6 +13,8 @@ var (
 )
 
 type (
+	InputType string
+
 	ListenOptions struct {
 		// Default: 1 * time.Minute
 		Timeout time.Duration
@@ -21,6 +23,25 @@ type (
 		TimeoutHandler telebot.HandlerFunc
 		CancelHandler telebot.HandlerFunc
 	}
+)
+
+const (
+	TextInput InputType = "text"
+	PhotoInput InputType = "photo"
+	AudioInput InputType = "audio"
+	VideoInput InputType = "video"
+	DocumentInput InputType = "document"
+	StickerInput InputType = "sticker"
+	VoiceInput InputType = "voice"
+	VideoNoteInput InputType = "videonote"
+	AnimationInput InputType = "animation"
+	ContactInput InputType = "contact"
+	LocationInput InputType = "location"
+	VenueInput InputType = "venue"
+	PollInput InputType = "poll"
+	GameInput InputType = "game"
+	DiceInput InputType = "dice"
+	AnyInput InputType = "any"
 )
 
 func (i *Instance) Listen(c telebot.Context, inputType InputType, opts *ListenOptions) (*telebot.Message, error) {
@@ -124,5 +145,16 @@ func (i *Instance) listen(chatID int64, timeout time.Duration) (*telebot.Message
 		return response, nil
 	case <-time.After(timeout):
 		return &telebot.Message{}, ErrTimeoutExceeded
+	}
+}
+
+func (i *Instance) Middleware() telebot.MiddlewareFunc {
+	return func(next telebot.HandlerFunc) telebot.HandlerFunc {
+		return func(c telebot.Context) error {
+			if ch, ok := i.channel[c.Chat().ID]; ok {
+				*ch <- c.Message()
+			}
+			return next(c)
+		}
 	}
 }
